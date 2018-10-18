@@ -21,11 +21,11 @@ Currently uses some posix APIs directly, and is primarily
 tested on linux.
 
 Tests (in the `tests/` directory) require
-(Google Test)[https://github.com/google/googletest].
+[Google Test](https://github.com/google/googletest).
 
 ### Trivial example
 
-```
+```cpp
 result<size_t, unix_err> extract_key_values(const char* filename, std::function<void (string_view key, string_view value)>&& dispatch_key_value)
 {
     file_handle file;
@@ -51,11 +51,11 @@ result<size_t, unix_err> extract_key_values(const char* filename, std::function<
 
 ### Current content
 
-* optional<T>: a `T` or `none`, include reference support and `map`/`and_then`
-* result<T, Error>: a `T` or `Error` including `map`/`and_then`
-* array_view<T>: a non-owning view to a contiguous block of 0..N `T`
-* string_view<T>: a non-owning view with string helper methods for splitting and in-place formatting
-* unix_err: a trivial wrapper around `errno`
-* file_handle: a very-trivial RAII wrapper around `FILE*` with a few convenience functions
-* timestamp: a {seconds, nanoseconds} timestamp
+* `optional<T>`: a `T` or `none`, include reference support and `map`/`and_then`
+* `result<T, Error>`: a `T` or `Error` including `map`/`and_then`
+* `array_view<T>`: a non-owning view to a contiguous block of 0..N `T`
+* `string_view<T>`: a non-owning view with string helper methods for splitting and in-place formatting
+* `unix_err`: a trivial wrapper around `errno`
+* `file_handle`: a very-trivial RAII wrapper around `FILE*` with a few convenience functions
+* `timestamp`: a {seconds, nanoseconds} timestamp
 
