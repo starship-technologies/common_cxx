@@ -140,6 +140,27 @@ struct optional
         }
         return *this;
     }
+    // Allow assignment from anything T is constructible with
+    template <typename U = T,
+      typename = typename std::enable_if<
+          !std::is_same<optional, typename std::decay<U>::type>::value
+        && std::is_constructible<T, U>::value
+        && std::is_assignable<T&, U>::value
+        && (
+              !std::is_scalar<T>::value
+            || std::is_same<T, typename std::decay<U>::type>::value
+           )
+      >::type
+    >
+    optional& operator=(U&& v) {
+        if (state == PRESENT) {
+            t = std::forward<U>(v);
+        } else {
+            new(&this->t) storage_type(std::forward<U>(v));
+            state = PRESENT;
+        }
+        return *this;
+    }
 
     optional(optional&& other)
     : state{other.state}
