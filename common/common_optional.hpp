@@ -50,7 +50,20 @@ struct optional_storage<R&> { using type = std::reference_wrapper<R>; };
 template <typename R>
 struct optional_storage<const R&> { using type = std::reference_wrapper<const R>; };
 
+template <typename T>
+struct add_reference_const {
+    using value_type = typename std::remove_reference<T>::type;
+    using const_value_type = typename std::add_const<value_type>::type;
+    using type = typename std::add_lvalue_reference<const_value_type>::type;
 };
+
+};
+
+#if defined(__GNUC__) && !defined(__clang__) && __GNUC__ <= 5
+#  define common_bugless_constexpr
+#else
+#  define common_bugless_constexpr constexpr
+#endif
 
 /**
  * Represents an optionally present type,
@@ -70,11 +83,12 @@ struct optional
     using non_reference_type = typename std::remove_reference<T>::type;
     using reference_type = typename std::add_lvalue_reference<T>::type;
     using decayed_type = typename std::decay<T>::type;
+    using const_type = typename std::conditional<std::is_reference<T>::value, typename impl::add_reference_const<T>::type, typename std::add_const<T>::type>::type;
     union {
         storage_type t;
     };
-    constexpr optional() {}
-    constexpr optional(none) {}
+    common_bugless_constexpr optional() {};
+    common_bugless_constexpr optional(none) {};
     template <typename U = T>
     optional(T&& t, typename std::enable_if<std::is_move_constructible<U>::value && !std::is_reference<U>::value>::type* = 0)
     : state(PRESENT) { new(&this->t) storage_type(std::move(t)); }
@@ -86,6 +100,12 @@ struct optional
 
     template <typename... Args>
     void reset(Args&&... args) {
+        destroy();
+        state = PRESENT;
+        new(&this->t) storage_type(std::forward<Args>(args)...);
+    }
+    template <typename... Args>
+    void emplace(Args&&... args) {
         destroy();
         state = PRESENT;
         new(&this->t) storage_type(std::forward<Args>(args)...);
@@ -132,6 +152,10 @@ struct optional
     {
         if (state == PRESENT)
             new(&this->t) storage_type(other.t);
+    }
+    void clear()
+    {
+        destroy();
     }
     void destroy()
     {
@@ -199,7 +223,7 @@ struct optional
     }
     constexpr const non_reference_type* operator->() const
     {
-        return &t;
+        return &(const T&)t;
     }
     non_reference_type* operator->()
     {
@@ -301,6 +325,10 @@ struct optional
         if (is_some())
             return optional<reference_type>(get());
         return optional<reference_type>(none{});
+    }
+    optional<const_type> as_const() const
+    {
+        return map([] (const T val) -> const_type { return val; });
     }
     // optional<T> -> result<T, E>
     template <typename E>
