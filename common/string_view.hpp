@@ -35,6 +35,28 @@
 namespace common
 {
 
+namespace impl
+{
+template <typename T>
+size_t strlen(const T* null_terminated)
+{
+    return std::char_traits<T>::length(null_terminated);
+}
+#ifdef __has_builtin
+#define COMMON_HAS_BUILTIN(x) __has_builtin(x)
+#else
+#define COMMON_HAS_BUILTIN(x) false
+#endif
+#if COMMON_HAS_BUILTIN(__builtin_strlen) \
+ || (defined(__GNUC__) && !defined(__clang__))
+template <>
+constexpr size_t strlen<char>(const char* null_terminated)
+{
+    return __builtin_strlen(null_terminated);
+}
+#endif
+}
+
 template <class T>
 struct basic_string_view : public array_view<T>
 {
@@ -59,8 +81,8 @@ struct basic_string_view : public array_view<T>
     constexpr basic_string_view(std::array<T, N>& array)
     : array_view<T>(array.data(), array.size())
     {}
-    basic_string_view(T* null_terminated)
-    : array_view<T>(null_terminated, std::char_traits<T>::length(null_terminated))
+    constexpr basic_string_view(T* null_terminated)
+    : array_view<T>(null_terminated, impl::strlen(null_terminated))
     {
     }
 #if !defined(__clang) && __GNUC__ == 4
