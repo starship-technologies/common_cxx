@@ -159,22 +159,24 @@ struct basic_string_view : public array_view<T>
     basic_string_view clip_head(basic_string_view<const_type> substr) const { return begins_with(substr) ? tail_without(substr.size()) : *this; }
     basic_string_view clip_tail(basic_string_view<const_type> substr) const { return ends_with(substr) ? head_without(substr.size()) : *this; }
 
-    template <class Fn>
-    size_t split_fn(T c, Fn&& fn) const
+    template <typename S, class Fn>
+    size_t split_fn_any(S c, Fn&& fn) const
     {
         basic_string_view<T> remaining = *this;
         size_t count = 0;
 
         while (remaining.size()) {
-            auto found = std::find(remaining.begin(), remaining.end(), c);
-            if (found != remaining.begin()) {
-                fn(basic_string_view<T>{remaining.begin(), found});
+            const T* pos = remaining.find_in(c);
+            if (!pos)
+                pos = remaining.end();
+            if (pos != remaining.begin()) {
+                fn(basic_string_view<T>{remaining.begin(), pos});
                 count += 1;
             }
 
-            if (found == remaining.end())
+            if (pos == remaining.end())
                 break;
-            remaining = {found + 1, remaining.end()};
+            remaining = {pos + pattern_length(c), remaining.end()};
         }
         return count;
     }
@@ -191,46 +193,126 @@ struct basic_string_view : public array_view<T>
         split_flag flags;
         split_def(T c, split_flag flags = none) : c{c}, flags{flags} {}
     };
-    common::optional<size_t> split_arg_single(T c, basic_string_view& arg) const
+    enum class pattern_type { str, any_char };
+    template <pattern_type P>
+    struct split_def_long_base
     {
-        const T* pos = (const T*) ::memchr(data(), c, size());
-        if (!pos) {
+        basic_string_view pattern;
+        split_flag flags;
+        split_def_long_base(basic_string_view p, split_flag flags = none) : pattern{p}, flags{flags} {}
+    };
+    template <typename Fn>
+    size_t split_fn(split_def def, Fn&& fn) const
+    {
+        return split_fn_any(def, std::move(fn));
+    }
+    template <typename Fn, pattern_type P>
+    size_t split_fn(split_def_long_base<P> def, Fn&& fn) const
+    {
+        return split_fn_any(def, std::move(fn));
+    }
+    static size_t pattern_length(split_def)
+    {
+        return 1;
+    }
+    using split_def_string = split_def_long_base<pattern_type::str>;
+    using split_def_any_char = split_def_long_base<pattern_type::any_char>;
+    struct splitter {
+        using flag = split_flag;
+        static split_def_string string(basic_string_view pattern, split_flag flags = split_flag::none)
+        {
+            return split_def_string {
+                .pattern_type = pattern,
+                .flags = flags,
+            };
+        }
+        static split_def_any_char any_char(basic_string_view chars, split_flag flags = split_flag::none)
+        {
+            return split_def_any_char {
+                .pattern_type = chars,
+                .flags = flags,
+            };
+        }
+    };
+    static size_t pattern_length(const split_def_string& def)
+    {
+        return def.pattern.size();
+    }
+    static size_t pattern_length(const split_def_any_char&)
+    {
+        return 1;
+    }
+    const T* find_in(const split_def_string& def) const
+    {
+        const char* res = (const char*) ::memmem(data(), size(), def.pattern.data(), def.pattern.size());
+        return res;
+    }
+    const T* find_in(const split_def_any_char& def) const
+    {
+        auto it = std::find_if(this->begin(), this->end(), [&def] (T chr) {
+            return ::memchr(def.pattern.data(), chr, def.pattern.size()) != nullptr;
+        });
+        if (it != this->end())
+            return &*it;
+        return nullptr;
+    }
+    const T* find_in(const split_def& def) const
+    {
+        return (const T*) ::memchr(data(), def.c, size());
+    }
+    template <typename S>
+    common::optional<size_t> split_arg_single(const S& c, basic_string_view& arg) const
+    {
+        const T* found = find_in(c);
+        if (!found) {
             arg = *this;
             return common::none{};
         }
-        arg = basic_string_view<T>{data(), pos};
+        arg = basic_string_view{data(), found};
         return arg.size();
     }
-    common::optional<size_t> split_arg(split_def c, basic_string_view& arg, basic_string_view& remaining) const
+    template <class S>
+    common::optional<size_t> split_arg(S splitter, basic_string_view& arg, basic_string_view& remaining) const
     {
-        auto read_count = split_arg_single(c.c, arg);
-        if (!read_count)
-            return read_count;
-        remaining = advance(*read_count + 1);
-        while (!read_count.get() && (c.flags & skip_empty) && remaining.size()) {
-            read_count = remaining.split_arg_single(c.c, arg);
-            if (!read_count)
+        auto skip_count = split_arg_single(splitter, arg);
+        if (!skip_count)
+            return skip_count;
+        remaining = advance(*skip_count + pattern_length(splitter));
+        while (!skip_count.get() && (splitter.flags & skip_empty) && remaining.size()) {
+            skip_count = remaining.split_arg_single(splitter, arg);
+            if (!skip_count)
                 break;
-            remaining = remaining.advance(*read_count + 1);
+            remaining = remaining.advance(*skip_count + pattern_length(splitter));
         }
-        return read_count;
+        return skip_count;
     }
-    size_t split_args(split_def c, basic_string_view& arg) const
+    template <class S>
+    size_t split_args_any(S splitter, basic_string_view& arg) const
     {
         auto remaining = *this;
-        split_arg(c, arg, remaining);
-        if (c.flags & last_captures_all)
+        split_arg(splitter, arg, remaining);
+        if (splitter.flags & last_captures_all)
             arg = {arg.begin(), remaining.end()};
         return 1;
     }
-    template <typename... Args>
-    size_t split_args(split_def c, basic_string_view& arg, Args&... args) const
+    template <class S, typename... Args>
+    size_t split_args_any(S splitter, basic_string_view& arg, Args&... args) const
     {
         auto remaining = *this;
-        common::optional<size_t> read_count = split_arg(c, arg, remaining);
+        common::optional<size_t> read_count = split_arg(splitter, arg, remaining);
         if (!read_count)
             return 1;
-        return 1 + remaining.split_args(c, args...);
+        return 1 + remaining.split_args_any(splitter, args...);
+    }
+    template <typename... Args>
+    size_t split_args(split_def splitter, basic_string_view& arg, Args&... args) const
+    {
+        return split_args_any<split_def>(splitter, arg, args...);
+    }
+    template <pattern_type P, typename... Args>
+    size_t split_args(split_def_long_base<P> splitter, basic_string_view& arg, Args&... args) const
+    {
+        return split_args_any<decltype(splitter)>(splitter, arg, args...);
     }
 
     common::optional<size_t> rsplit_arg_single(T c, basic_string_view& arg) const

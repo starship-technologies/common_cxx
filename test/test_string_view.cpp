@@ -123,6 +123,44 @@ TEST(split_args, normal_trailing) {
     EXPECT_EQ(value, "value");
 }
 
+TEST(split_advanced, string_pattern) {
+    string_view key, value;
+    string_view source{"key===value"};
+    size_t count = source.split_args(string_view::splitter::string("==="), key, value);
+    EXPECT_EQ(count, 2);
+    EXPECT_EQ(key, "key");
+    EXPECT_EQ(value, "value");
+}
+
+TEST(split_advanced, string_pattern_longer) {
+    string_view key, value;
+    string_view source{"and you are the wind beneath my wings my dear"};
+    size_t count = source.split_args(string_view::splitter::string(" are the wind beneath my wings "), key, value);
+    EXPECT_EQ(count, 2);
+    EXPECT_EQ(key, "and you");
+    EXPECT_EQ(value, "my dear");
+}
+
+TEST(split_advanced, string_pattern_many) {
+    string_view one, two, three;
+    string_view source{"BEGIN SOURCE;\nNEXT LINE;\nFINAL INSTANTIATION;\n"};
+    size_t count = source.split_args(string_view::splitter::string(";\n"), one, two, three);
+    EXPECT_EQ(count, 3);
+    EXPECT_EQ(one, "BEGIN SOURCE");
+    EXPECT_EQ(two, "NEXT LINE");
+    EXPECT_EQ(three, "FINAL INSTANTIATION");
+}
+
+TEST(split_advanced, split_any) {
+    string_view key, value, final;
+    string_view source{"key?value&final"};
+    size_t count = source.split_args(string_view::splitter::any_char("&?"), key, value, final);
+    EXPECT_EQ(count, 3);
+    EXPECT_EQ(key, "key");
+    EXPECT_EQ(value, "value");
+    EXPECT_EQ(final, "final");
+}
+
 TEST(basename, normal) {
     string_view source{"/some/path"};
     string_view basename = source.basename();
@@ -265,5 +303,16 @@ TEST(rsplit_args, normal_trailing) {
     EXPECT_EQ(count, 2);
     EXPECT_EQ(key, "key");
     EXPECT_EQ(value, "value");
+}
+
+TEST(split_fn, normal) {
+    std::vector<string_view> res;
+    string_view source{"key=value=trailing"};
+    size_t count = source.split_fn('=', [&res] (common::string_view str) {
+        res.push_back(str);
+    });
+    EXPECT_EQ(count, 3);
+    std::vector<string_view> expected = {"key", "value", "trailing"};
+    EXPECT_EQ(res, expected);
 }
 
