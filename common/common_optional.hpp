@@ -59,7 +59,7 @@ struct add_reference_const {
 
 };
 
-#if defined(__GNUC__) && !defined(__clang__) && __GNUC__ <= 5
+#if defined(__GNUC__) && !defined(__clang__) && __GNUC__ <= 6
 #  define common_bugless_constexpr
 #else
 #  define common_bugless_constexpr constexpr
