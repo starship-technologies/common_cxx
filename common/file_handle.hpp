@@ -66,11 +66,11 @@ struct file_handle
         std::swap(file, other.file);
         return *this;
     }
-    constexpr bool good() const
+    common_bugless_constexpr bool good() const
     {
         return is_open();
     }
-    constexpr bool is_open() const
+    common_bugless_constexpr bool is_open() const
     {
         return (file != nullptr);
     }
