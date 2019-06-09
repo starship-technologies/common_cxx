@@ -25,6 +25,7 @@
 
 #include <vector>
 #include <array>
+#include <algorithm>
 #include "common_optional.hpp"
 
 namespace common
@@ -118,6 +119,17 @@ struct array_view
 
     constexpr common::optional<T&> at_opt(size_t index) const { return (index < count) ? common::optional<T&>(ptr[index]) : common::optional<T&>{}; }
     constexpr common::optional<T&> at_opt(backindex bi) const { return at_opt(bi.to_index(this->count)); }
+
+    common::optional<T&> find(const T& t)
+    {
+        auto it = std::find(begin(), end(), t);
+        return (it != end()) ? common::optional<T&>(*it) : common::optional<T&>{};
+    }
+    common::optional<const T&> find_const(const T& t) const
+    {
+        auto it = std::find(begin(), end(), t);
+        return (it != end()) ? common::optional<const T&>(*it) : common::optional<const T&>{};
+    }
 
     template <typename U, typename = typename std::enable_if<std::is_same<const_type, U>::value && !std::is_same<T, U>::value>::type>
     operator array_view<U>() { return array_view<const_type>(ptr, count); }
