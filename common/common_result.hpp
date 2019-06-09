@@ -47,6 +47,19 @@ ok_t<T> make_ok(T&& t)
     return ok_t<T>(std::forward<T>(t));
 }
 
+template <typename E>
+struct unexpected
+{
+    E&& e;
+    unexpected(E&& arg) : e(std::forward<E>(arg)) {};
+};
+template <typename E>
+unexpected<E> make_unexpected(E&& e)
+{
+    return unexpected<E>(std::forward<E>(e));
+}
+
+
 /**
  * Represents a (result | error) type,
  * containing one or the other based on
@@ -87,6 +100,8 @@ struct result
     result(const E& e) : state(IS_E) { new(&this->e) E(e); }
     template <typename C>
     result(ok_t<C>&& ok) : state(IS_T) { new(&this->t) T(std::forward<C>(ok.t)); }
+    template <typename C>
+    result(unexpected<C>&& err) : state(IS_E) { new(&this->e) E(std::forward<C>(err.e)); }
 
     result(result&& other)
     {
