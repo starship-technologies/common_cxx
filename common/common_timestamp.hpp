@@ -32,6 +32,8 @@ namespace common
 
 struct timestamp
 {
+    enum { SEC_NS = 1 * 1000 * 1000 * 1000 };
+
     uint32_t secs  = 0;
     uint32_t nsecs = 0;
     constexpr timestamp() = default;
@@ -56,7 +58,6 @@ struct timestamp
     constexpr double operator-(const timestamp& other) const { return to_double() - other.to_double(); }
     timestamp operator+(const timestamp& other) const
     {
-        enum { SEC_NS = 1 * 1000 * 1000 * 1000 };
         common::timestamp ret{secs + other.secs, nsecs + other.nsecs};
         if (ret.nsecs >= SEC_NS) {
             ret.secs += ret.nsecs / SEC_NS;
