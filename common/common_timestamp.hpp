@@ -25,6 +25,7 @@
 
 #include <cstdint>
 #include <time.h>
+#include <chrono>
 
 namespace common
 {
@@ -34,10 +35,13 @@ struct timestamp
     uint32_t secs  = 0;
     uint32_t nsecs = 0;
     constexpr timestamp() = default;
-    constexpr explicit timestamp(double s) : secs(s), nsecs((s - secs) * 1e9) {}
+    constexpr explicit timestamp(double s) : secs(s), nsecs((s - uint32_t(s)) * 1e9) {}
     constexpr double to_double() const { return secs + nsecs * 1e-9; }
     constexpr timestamp(uint32_t s, uint32_t ns) : secs(s), nsecs(ns) {}
     constexpr timestamp(const timestamp& other) = default;
+    static constexpr timestamp from_nanos(uint64_t nanos) { return timestamp{uint32_t(nanos / SEC_NS), uint32_t(nanos % SEC_NS)}; }
+    template <typename T>
+    static constexpr timestamp from_chrono_duration(T dur) { return from_nanos(std::chrono::duration_cast<std::chrono::nanoseconds>(dur).count()); }
 
     constexpr static timestamp zero() { return timestamp(); }
     constexpr explicit operator bool() const { return secs || nsecs; }
@@ -75,6 +79,14 @@ struct timestamp
     constexpr static timestamp cvt(const T& t)
     {
         return timestamp{t.sec, t.nsec};
+    }
+    static constexpr timestamp min_value()
+    {
+        return timestamp{0, 0};
+    }
+    static constexpr timestamp max_value()
+    {
+        return timestamp{std::numeric_limits<decltype(secs)>::max(), 999999999};
     }
 };
 
