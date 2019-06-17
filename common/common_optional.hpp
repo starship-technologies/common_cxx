@@ -226,6 +226,18 @@ struct optional
     {
         return get_checked();
     }
+    T& value_unchecked() &
+    {
+        return t;
+    }
+    T value_unchecked() &&
+    {
+        return t;
+    }
+    const T& value_unchecked() const &
+    {
+        return t;
+    }
     constexpr T get_or(const T& def = T()) const
     {
         return (state == PRESENT) ? T(t) : def;
