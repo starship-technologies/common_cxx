@@ -23,6 +23,7 @@
 #ifndef COMMON_UNIX_ERR
 #define COMMON_UNIX_ERR
 
+#include <string>
 #include <cstring>
 #include <errno.h>
 
