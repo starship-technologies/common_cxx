@@ -259,6 +259,35 @@ struct result
             return std::move(res_inner());
         return fn(std::move(err()));
     }
+    // Fn: (E&&) -> void
+    template <typename Fn>
+    void with_err(Fn&& fn) &&
+    {
+        if (is_err())
+            fn(std::move(err()));
+    }
+    // Fn: (T&&) -> void
+    // Fn: (const E&) -> void
+    template <typename Fn>
+    void with_err(Fn&& fn) const &
+    {
+        if (is_err())
+            fn(err());
+    }
+    // Fn: (T&&) -> void
+    template <typename Fn>
+    void with_res(Fn&& fn) &&
+    {
+        if (is_ok())
+            fn(std::move(res_inner()));
+    }
+    // Fn: (const T&) -> void
+    template <typename Fn>
+    void with_res(Fn&& fn) const &
+    {
+        if (is_ok())
+            fn(res_inner());
+    }
 
     constexpr bool is_ok() const { return state == IS_T; }
     constexpr bool is_err() const { return !is_ok(); }
