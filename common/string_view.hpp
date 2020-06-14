@@ -32,6 +32,10 @@
 
 #include <stdarg.h>
 
+#ifdef __cpp_impl_three_way_comparison
+#include <compare>
+#endif
+
 namespace common
 {
 
@@ -105,28 +109,37 @@ struct basic_string_view : public array_view<T>
     template <typename U, typename = typename std::enable_if<std::is_same<const_type, U>::value && !std::is_same<T, U>::value>::type>
     constexpr operator basic_string_view<U>() const { return basic_string_view<const_type>(data(), size()); }
 
-    bool operator==(const basic_string_view<T>& other) const
+    constexpr bool operator==(const basic_string_view<T>& other) const
     {
         return array_view<T>::operator==(other);
     }
-    bool operator!=(const basic_string_view<T>& other) const
+    constexpr bool operator!=(const basic_string_view<T>& other) const
     {
         return !(*this == other);
     }
-    bool operator<(const basic_string_view& other) const
+    constexpr bool operator<(const basic_string_view& other) const
     {
         const int cmp = ::strncmp(data(), other.data(), std::min(size(), other.size()));
         if (cmp != 0)
             return (cmp < 0);
         return size() < other.size();
     }
-    int compare(const basic_string_view& other) const
+    constexpr int compare(const basic_string_view& other) const
     {
         const int cmp = ::strncmp(data(), other.data(), std::min(size(), other.size()));
         if (cmp != 0)
             return cmp;
         return (size() < other.size()) ? -1 : (size() > other.size()) ? 1 : 0;
     }
+#ifdef __cpp_impl_three_way_comparison
+    friend constexpr std::strong_ordering operator<=>(const basic_string_view& a, const basic_string_view& b)
+    {
+        const int cmp = a.compare(b);
+        return (cmp == 0) ? std::strong_ordering::equal
+             : (cmp < 0)  ? std::strong_ordering::less
+             :              std::strong_ordering::greater;
+    }
+#endif
 
     std::string to_string() const
     {
