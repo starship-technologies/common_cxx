@@ -130,6 +130,12 @@ struct array_view
         auto it = std::find(begin(), end(), t);
         return (it != end()) ? common::optional<const T&>(*it) : common::optional<const T&>{};
     }
+    template <typename F>
+    common::optional<T&> find_if(F&& f)
+    {
+        auto it = std::find_if(begin(), end(), std::forward<F>(f));
+        return (it != end()) ? common::optional<T&>(*it) : common::optional<T&>{};
+    }
 
     template <typename U, typename = typename std::enable_if<std::is_same<const_type, U>::value && !std::is_same<T, U>::value>::type>
     operator array_view<U>() { return array_view<const_type>(ptr, count); }
