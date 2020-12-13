@@ -316,3 +316,13 @@ TEST(split_fn, normal) {
     EXPECT_EQ(res, expected);
 }
 
+TEST(compare, less_than) {
+    string_view a{"a"}, b{"b"};
+    EXPECT_EQ(a < b, true);
+}
+
+TEST(compare, equal) {
+    string_view a{"a"}, b{"b"}, a2{"a"};
+    EXPECT_EQ(a == b, false);
+    EXPECT_EQ(a == a2, true);
+}
