@@ -188,6 +188,17 @@ struct array_view
     {
         return array_view<const U>{reinterpret_cast<const U*>(data()), size() * sizeof(T) / sizeof(U)};
     }
+    /// allow reintepreting array_view<const U> as array_view<const char>
+    template <typename U, typename T1 = T, typename = typename std::enable_if<!std::is_same<T1, const_type>::value>::type>
+    constexpr array_view<char> reinterpret_as_char() const
+    {
+        return array_view<char>{reinterpret_cast<char*>(data()), size() * sizeof(T) / sizeof(char)};
+    }
+    /// allow reintepreting array_view<const U> as array_view<const char>
+    constexpr array_view<const char> reinterpret_as_char() const
+    {
+        return array_view<const char>{reinterpret_cast<const char*>(data()), size() * sizeof(T) / sizeof(char)};
+    }
 
     array_view& operator<<(const T& item)
     {
