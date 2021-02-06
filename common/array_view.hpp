@@ -79,6 +79,10 @@ struct array_view
     constexpr iterator begin() const { return ptr; }
     constexpr iterator end()   const { return ptr + count; }
 
+    using reverse_iterator = std::reverse_iterator<T*>;
+    constexpr reverse_iterator rbegin() const { return reverse_iterator(end()); }
+    constexpr reverse_iterator rend()   const { return reverse_iterator(begin()); }
+
     constexpr T& front() const { return *(ptr); }
     constexpr T& back()  const { return *(ptr + count - 1); }
 
