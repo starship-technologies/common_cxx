@@ -12,9 +12,13 @@ ARCH_CPPFLAGS := -march=native
 
 all: run_tests
 
-test_string_view: test_string_view.cpp ../common/string_view.hpp
+test_string_view: test_string_view.cpp ../common/string_view.hpp ../common/array_view.hpp
 	$(CXX) -o $@ $(CPPFLAGS) $< $(LDFLAGS)
 TESTS += test_string_view
+
+test_array_view: test_array_view.cpp ../common/array_view.hpp ../common/reverse_iterable.hpp
+	$(CXX) -o $@ $(CPPFLAGS) $< $(LDFLAGS)
+TESTS += test_array_view
 
 $(TESTS): LDFLAGS += $(LDFLAGS_GTEST)
 
