@@ -234,17 +234,11 @@ struct basic_string_view : public array_view<T>
         using flag = split_flag;
         static split_def_string string(basic_string_view pattern, split_flag flags = split_flag::none)
         {
-            return split_def_string {
-                .pattern_type = pattern,
-                .flags = flags,
-            };
+            return split_def_string{pattern, flags};
         }
         static split_def_any_char any_char(basic_string_view chars, split_flag flags = split_flag::none)
         {
-            return split_def_any_char {
-                .pattern_type = chars,
-                .flags = flags,
-            };
+            return split_def_any_char{chars, flags};
         }
     };
     static size_t pattern_length(const split_def_string& def)

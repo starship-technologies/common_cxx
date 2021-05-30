@@ -1,4 +1,4 @@
-CPPFLAGS += -std=c++14
+CPPFLAGS += -std=c++17
 CPPFLAGS += -I..
 CPPFLAGS += -g
 CPPFLAGS += -O2
