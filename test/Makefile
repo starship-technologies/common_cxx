@@ -1,14 +1,15 @@
-CPPFLAGS += -std=c++17
 CPPFLAGS += -I..
 CPPFLAGS += -g
 CPPFLAGS += -O2
 CPPFLAGS += -W -Wall
 CPPFLAGS += $(ARCH_CPPFLAGS)
 CPPFLAGS += $(EXTRA_CPPFLAGS)
+CPPFLAGS += -std=$(CPPSTD)
 
 LDFLAGS_GTEST := -lgtest -lgtest_main
 
 ARCH_CPPFLAGS := -march=native
+CPPSTD = c++17
 
 all: run_tests
 

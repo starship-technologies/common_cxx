@@ -140,6 +140,26 @@ struct array_view
         auto it = std::find_if(begin(), end(), std::forward<F>(f));
         return (it != end()) ? common::optional<T&>(*it) : common::optional<T&>{};
     }
+#ifdef __cpp_lib_ranges
+    template <typename V, typename Project>
+    common::optional<T&> find(const V& t, Project proj)
+    {
+        auto it = std::ranges::find(begin(), end(), t, std::ref(proj));
+        return (it != end()) ? common::optional<T&>(*it) : common::optional<T&>{};
+    }
+    template <typename V, typename Project>
+    common::optional<const T&> find_const(const V& t, Project proj) const
+    {
+        auto it = std::ranges::find(begin(), end(), t, std::ref(proj));
+        return (it != end()) ? common::optional<const T&>(*it) : common::optional<const T&>{};
+    }
+    template <typename F, typename Project>
+    common::optional<T&> find_if(F&& f, Project proj)
+    {
+        auto it = std::ranges::find_if(begin(), end(), std::forward<F>(f), std::ref(proj));
+        return (it != end()) ? common::optional<T&>(*it) : common::optional<T&>{};
+    }
+#endif
 
     template <typename U, typename = typename std::enable_if<std::is_same<const_type, U>::value && !std::is_same<T, U>::value>::type>
     operator array_view<U>() { return array_view<const_type>(ptr, count); }
