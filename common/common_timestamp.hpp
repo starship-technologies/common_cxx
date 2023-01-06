@@ -24,7 +24,6 @@
 #define COMMON_TIMESTAMP_HPP
 
 #include <cstdint>
-#include <time.h>
 #include <chrono>
 
 namespace common
@@ -72,9 +71,8 @@ struct timestamp
 
     static timestamp now()
     {
-        struct timespec ts;
-        ::clock_gettime(CLOCK_REALTIME, &ts);
-        return common::timestamp(ts.tv_sec, ts.tv_nsec);
+        const auto now = std::chrono::system_clock::now();
+        return from_chrono_duration(now.time_since_epoch());
     }
     template <typename T>
     constexpr static timestamp cvt(const T& t)
