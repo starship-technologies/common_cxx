@@ -28,6 +28,7 @@
 #include <type_traits>
 
 #include "common/common_panic.hpp"
+#include "common/shared_impl.hpp"
 
 namespace common
 {
@@ -208,7 +209,7 @@ struct optional
     }
     T get() &&
     {
-        return get_checked();
+        return std::move(get_checked());
     }
     const T& get() const &
     {
@@ -220,7 +221,7 @@ struct optional
     }
     T value() &&
     {
-        return get_checked();
+        return std::move(get_checked());
     }
     const T& value() const &
     {
@@ -305,21 +306,41 @@ struct optional
 
     // F: (T) -> newtype
     template <typename Fn>
-    optional<typename std::result_of<Fn(T)>::type> map(Fn&& fn) const
+    optional<typename impl::invoke_result_t<Fn, T>> map(Fn&& fn) const &
     {
         if (is_some())
-            return fn(get());
+            return fn(value_unchecked());
+        else
+            return none{};
+    }
+    // F: (T&&) -> newtype
+    template <typename Fn>
+    optional<typename std::result_of<Fn(T)>::type> map(Fn&& fn) &&
+    {
+        // Use T&& to coerce reference wrapper to T&& if present
+        if (is_some())
+            return fn((T&&)std::move(t));
         else
             return optional<typename std::result_of<Fn(T)>::type>(none{});
     }
+    // F: (T) -> optional<U>
+    // Returns None if the option is None, otherwise returns other
+    template <typename U>
+    optional<U> and_other(optional<U> other) const
+    {
+        if (is_some())
+            return other;
+        else
+            return none{};
+    }
     // F: (T) -> optional<newtype>
     template <typename Fn>
-    typename std::result_of<Fn(T)>::type and_then(Fn&& fn) const
+    typename impl::invoke_result_t<Fn, T> and_then(Fn&& fn) const
     {
         if (is_some())
             return fn(get());
         else
-            return typename std::result_of<Fn(T)>::type(none{});
+            return none{};
     }
     optional take()
     {
@@ -429,6 +450,14 @@ struct optional
     }
 
     explicit operator bool() const { return state == PRESENT; }
+
+    // Allow implicit cast to const type for references
+    template<typename U = T, bool conversion_enabled = !std::is_same<U, const_type>::value && std::is_reference<U>::value>
+    operator typename std::enable_if<conversion_enabled, optional<const_type>>::type() const
+    {
+        return as_const();
+    }
+
 };
 
 template <class T>
