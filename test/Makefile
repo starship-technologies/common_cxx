@@ -21,6 +21,10 @@ test_array_view: test_array_view.cpp ../common/array_view.hpp ../common/reverse_
 	$(CXX) -o $@ $(CPPFLAGS) $< $(LDFLAGS)
 TESTS += test_array_view
 
+test_timestamp: test_timestamp.cpp ../common/common_timestamp.hpp
+	$(CXX) -o $@ $(CPPFLAGS) $< $(LDFLAGS)
+TESTS += test_timestamp
+
 $(TESTS): LDFLAGS += $(LDFLAGS_GTEST)
 
 run_tests: $(TESTS)

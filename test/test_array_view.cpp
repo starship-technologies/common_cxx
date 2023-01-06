@@ -58,3 +58,35 @@ TEST(ranges, project) {
 }
 #endif
 
+struct noncopyable {
+    noncopyable() = default;
+    noncopyable(noncopyable&&) = default;
+    int i = 5;
+};
+
+auto opt() -> common::optional<std::string&>
+{
+    static std::string yo("yo");
+    return yo;
+}
+
+TEST(opt, opt) {
+    opt().map([] (const auto& s) { return s.c_str(); }).get_or("");
+}
+
+
+TEST(optional, noncopyable) {
+    using common::optional;
+    optional<float> f{5.0};
+    optional<float&> fr{f.get()};
+    optional<const float&> fcr{f.get()};
+
+    optional<const float&> to = fr;
+    optional<const float&> to2 = fcr;
+
+    noncopyable nc;
+    optional<noncopyable> oo = std::move(nc);
+    optional<noncopyable> ooo = std::move(oo).map([] (noncopyable&& nc) { nc.i = 4; return std::move(nc); });
+    EXPECT_EQ(ooo.get().i, 4);
+}
+
