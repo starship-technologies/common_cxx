@@ -25,6 +25,7 @@
 
 #include "common/array_view.hpp"
 #include "common/common_optional.hpp"
+#include "common/shared_defines.hpp"
 
 #include <string>
 #include <algorithm>
@@ -251,7 +252,13 @@ struct basic_string_view : public array_view<T>
     }
     const T* find_in(const split_def_string& def) const
     {
-        const char* res = (const char*) ::memmem(data(), size(), def.pattern.data(), def.pattern.size());
+#ifndef _WIN32
+        const T* res = (const T*) ::memmem(data(), size() * sizeof(T), def.pattern.data(), def.pattern.size() * sizeof(T));
+#else
+        const T* res = std::search(this->begin(), this->end(), def.pattern.begin(), def.pattern.end());
+        if (res == this->end())
+            return nullptr;
+#endif
         return res;
     }
     const T* find_in(const split_def_any_char& def) const
@@ -324,7 +331,12 @@ struct basic_string_view : public array_view<T>
 
     common::optional<size_t> rsplit_arg_single(T c, basic_string_view& arg) const
     {
+#ifdef _GNU_SOURCE
         const T* pos = (const T*) ::memrchr(data(), c, size());
+#else
+        auto it = std::find(this->rbegin(), this->rend(), c);
+        const T* pos = (it == this->rend()) ? nullptr : &*it;
+#endif
         if (!pos) {
             arg = *this;
             return common::none{};
@@ -365,10 +377,16 @@ struct basic_string_view : public array_view<T>
     }
     common::optional<basic_string_view> find_opt_str(basic_string_view<const_type> needle) const
     {
+#ifndef _WIN32
         void* found = ::memmem(static_cast<const void*>(data()),        size()        * sizeof(T),
                                static_cast<const void*>(needle.data()), needle.size() * sizeof(T));
         if (!found)
             return common::none{};
+#else
+        T* found = std::search(this->begin(), this->end(), needle.begin(), needle.end());
+        if (found == this->end())
+            return common::none{};
+#endif
         return basic_string_view{static_cast<T*>(found), this->end()};
     }
     common::optional<size_t> find_opt(basic_string_view<const_type> needle) const
@@ -428,9 +446,9 @@ struct basic_string_view : public array_view<T>
         return advance(ret);
     }
     template <typename = typename std::enable_if<!std::is_const<T>::value>>
-    int format(const char* format_string, ...) const __attribute__ ((format (printf, 2, 3)));
+    int format(const char* format_string, ...) const COMMON_FORMAT_VALIDATE(2, 3);
     template <typename = typename std::enable_if<!std::is_const<T>::value>>
-    basic_string_view format_advance(const char* format_string, ...) const __attribute__ ((format (printf, 2, 3)));
+    basic_string_view format_advance(const char* format_string, ...) const COMMON_FORMAT_VALIDATE(2, 3);
 
     constexpr basic_string_view advanced(size_t chars) const
     {
