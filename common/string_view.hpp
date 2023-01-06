@@ -487,19 +487,19 @@ using string_view_writeable = basic_string_view<char>;
 
 #ifndef COMMON_STRING_NO_STRING_OPERATORS
 template <typename T>
-std::basic_string<T> operator+(std::basic_string<T>&& string, common::basic_string_view<T> view)
+std::basic_string<T> operator+(std::basic_string<T>&& string, common::basic_string_view<const T> view)
+{
+    string.append(view.data(), view.size());
+    return std::move(string);
+}
+template <typename T>
+std::basic_string<T>& operator+=(std::basic_string<T>& string, common::basic_string_view<const T> view)
 {
     string.append(view.data(), view.size());
     return string;
 }
 template <typename T>
-std::basic_string<T>& operator+=(std::basic_string<T>& string, common::basic_string_view<T> view)
-{
-    string.append(view.data(), view.size());
-    return string;
-}
-template <typename T>
-std::basic_string<T> operator+(const std::basic_string<T>& string_ref, common::basic_string_view<T> view)
+std::basic_string<T> operator+(const std::basic_string<T>& string_ref, common::basic_string_view<const T> view)
 {
     auto string = string_ref;
     string.append(view.data(), view.size());
