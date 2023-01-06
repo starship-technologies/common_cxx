@@ -43,7 +43,7 @@ namespace common
 namespace impl
 {
 template <typename T>
-size_t strlen(const T* null_terminated)
+constexpr size_t strlen(const T* null_terminated)
 {
     return std::char_traits<T>::length(null_terminated);
 }
@@ -86,8 +86,10 @@ struct basic_string_view : public array_view<T>
     constexpr basic_string_view(std::array<T, N>& array)
     : array_view<T>(array.data(), array.size())
     {}
+    basic_string_view(std::nullptr_t)
+    {}
     constexpr basic_string_view(T* null_terminated)
-    : array_view<T>(null_terminated, impl::strlen(null_terminated))
+    : array_view<T>(null_terminated, null_terminated ? impl::strlen(null_terminated) : 0)
     {
     }
 #if !defined(__clang) && __GNUC__ == 4
