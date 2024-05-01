@@ -102,6 +102,15 @@ struct file_handle
             return ok{};
         return unix_err::current();
     }
+    result<array_view<char>, unix_err> read_view(array_view<char> into)
+    {
+        if (!good())
+            return unix_err{ENOENT};
+        int ret = ::fread(into.data(), 1, into.size(), file);
+        if (ret >= 0)
+            return into.head(ret);
+        return unix_err::current();
+    }
     result<ok, unix_err> read_all(std::string& into)
     {
         if (!good())
