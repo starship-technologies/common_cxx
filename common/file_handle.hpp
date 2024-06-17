@@ -78,8 +78,8 @@ struct file_handle
     {
         if (!good())
             return 0;
-        struct stat stat_buf;
-        int err = ::fstat(fileno(file), &stat_buf);
+        struct stat64 stat_buf;
+        int err = ::fstat64(fileno(file), &stat_buf);
         if (err == 0)
             return stat_buf.st_size;
         return 0;
